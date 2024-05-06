@@ -1,13 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird Clone</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Bird</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Ẩn phần ngoài vùng nhìn thấy */
+    }
+
+    .game-container {
+      position: relative;
+      width: 100vw; /* Kích thước 100% chiều rộng của viewport */
+      height: 100vh; /* Kích thước 100% chiều cao của viewport */
+      background-color: #87CEEB;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .pipe {
+      position: absolute;
+      z-index: 2;
+    }
+
+    #playButton,
+    #playAgainButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 40px;
+      font-size: 30px;
+      background-color: #FF6347;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 3; /* Đặt lớp trên cùng */
+    }
+
+    #playAgainButton {
+      display: none; /* Ẩn ban đầu */
+    }
+  </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <script src="script.js"></script>
+  <div class="game-container">
+    <canvas id="gameCanvas" width="100%" height="100%"></canvas>
+    <button id="playButton" onclick="startGame()">Play</button>
+    <button id="playAgainButton" onclick="playAgain()">Chơi lại</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let bird = new Image();
+    bird.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX7YcHkhMFoNobLtIpPifoArauC3XqBtnkui6_eyoEDA&s'; // Thay đổi đường dẫn nếu cần
+    let birdX = 50;
+    let birdY = canvas.height / 2;
+    let gravity = 1;
+    let jump = -15;
+    let pipes = [];
+    let score = 0;
+    let gameover = false;
+
+    bird.onload = function() {
+      drawBird();
+    }
+
+    function drawBird() {
+      ctx.drawImage(bird, birdX, birdY, 40, 30);
+    }
+
+    function drawPipe(x, y, height) {
+      ctx.fillStyle = '#008000';
+      ctx.fillRect(x, y, 50, height);
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function update() {
+      if (!gameover) {
+        birdY += gravity;
+        if (birdY < 0 || birdY > canvas.height) {
+          gameOver();
+        }
+        for (let i = 0; i < pipes.length; i++) {
+          pipes[i].x -= 3;
+          if (birdX + 40 > pipes[i].x && birdX < pipes[i].x + 50 && (birdY < pipes[i].height || birdY + 30 > pipes[i].height + 100)) {
+            gameOver();
+          }
+          if (pipes[i].x === 0) {
+            score++;
+          }
+          if (pipes[i].x < -50) {
+            pipes.splice(i, 1);
+            i--;
+          }
+        }
+        if (score % 100 === 0 && score !== 0) {
+          gravity++;
+        }
+      }
+    }
+
+    function render() {
+      clearCanvas();
+      drawBird();
+      for (let i = 0; i < pipes.length; i++) {
+        drawPipe(pipes[i].x, 0, pipes[i].height);
+        drawPipe(pipes[i].x, pipes[i].height + 100, canvas.height - pipes[i].height - 100);
+      }
+      ctx.font = '30px Arial';
+      ctx.fillText(`Score: ${score}`, 10, 30);
+    }
+
+    function gameLoop() {
+      update();
+      render();
+      if (!gameover) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    document.addEventListener('click', function(event) {
+      if (!gameover) {
+        birdY += jump;
+      }
+    });
+
+    function gameOver() {
+      gameover = true;
+      document.getElementById('playAgainButton').style.display = 'block';
+    }
+
+    function startGame() {
+      birdY = canvas.height / 2;
+      gravity = 1;
+      pipes = [];
+      score = 0;
+      gameover = false;
+      document.getElementById('playButton').style.display = 'none';
+      gameLoop();
+    }
+
+    function playAgain() {
+      birdY = canvas.height / 2;
+      gravity = 1;
+      pipes = [];
+      score = 0;
+      gameover = false;
+      document.getElementById('playAgainButton').style.display = 'none';
+      startGame();
+    }
+
+    function generatePipes() {
+      const minHeight = 50;
+      const maxHeight = canvas.height - 150;
+      const height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
+      pipes.push({ x: canvas.width, height: height });
+    }
+
+    setInterval(generatePipes, 2000);
+  </script>
 </body>
 </html>
